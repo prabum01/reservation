@@ -1,7 +1,10 @@
 package org.telepathy.reservation.service;
 
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
 import org.telepathy.reservation.enums.RoomStatus;
 
+@Scope(value = ConfigurableBeanFactory.SCOPE_SINGLETON)
 public class RoomServiceFactory {
 
     public RoomService getRoomService(RoomStatus roomStatus){
