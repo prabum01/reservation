@@ -1,4 +1,4 @@
-package reservation;
+package org.telepathy.reservation;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
