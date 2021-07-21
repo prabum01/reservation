@@ -19,9 +19,5 @@ public enum RoomStatus {
     /**
      * Repair room status.
      */
-    Repair,
-    /**
-     * Lobby room status.
-     */
-    Lobby;
+    Repair
 }
