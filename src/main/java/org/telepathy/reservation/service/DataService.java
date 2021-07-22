@@ -4,7 +4,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 import org.telepathy.reservation.enums.RoomStatus;
 import org.telepathy.reservation.exception.InvalidRoomNumberException;
 import org.telepathy.reservation.exception.InvalidRoomServiceException;
@@ -18,20 +17,26 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.stream.Collectors;
 
+/**
+ * The type Data service.
+ */
 @Service
 @Scope(value = ConfigurableBeanFactory.SCOPE_SINGLETON)
 public class DataService {
 
     @Value("${number.of.floors}")
-    private Integer floorCount;
+    private Integer floorCount = 4;
 
     @Value("${room.numbers}")
-    private String roomNumbers;
+    private String roomNumbers = "A,B,C,D,E";
 
     private List<String> roomNumberList;
     private ConcurrentHashMap<String, Room> hotelRooms;
     private PriorityBlockingQueue<Room> priorityRooms;
 
+    /**
+     * Instantiates a new Data service.
+     */
     public DataService() {
         initializeRooms();
     }
@@ -41,7 +46,7 @@ public class DataService {
             throw new IllegalArgumentException("Floor or Room must be at least 1");
         }
 
-        roomNumberList = Arrays.stream(StringUtils.split(roomNumbers, ",")).collect(Collectors.toList());
+        roomNumberList =  Arrays.stream(roomNumbers.split(",")).collect(Collectors.toList());
         hotelRooms = new ConcurrentHashMap<>();
         priorityRooms = new PriorityBlockingQueue<>(floorCount * roomNumberList.size(),
                 Comparator.comparing(Room::getRoomId)
@@ -63,34 +68,67 @@ public class DataService {
         }
     }
 
+    /**
+     * Poll priority room room.
+     *
+     * @return the room
+     */
     public Room pollPriorityRoom() {
         return priorityRooms.poll();
     }
 
+    /**
+     * Add to priority room.
+     *
+     * @param room the room
+     */
     public void addToPriorityRoom(Room room) {
         priorityRooms.add(room);
     }
 
+    /**
+     * Gets hotel rooms.
+     *
+     * @return the hotel rooms
+     */
     public ConcurrentHashMap<String, Room> getHotelRooms() {
         return hotelRooms;
     }
 
+    /**
+     * Gets available rooms.
+     *
+     * @return the available rooms
+     */
     public List<String> getAvailableRooms() {
         List<String> availableRooms = this.getHotelRooms().entrySet()
-                .stream().filter(f -> f.getValue().getRoomStatus().equals(RoomStatus.Vacant))
+                .stream().filter(f -> f.getValue().getRoomStatus().equals(RoomStatus.Available))
                 .map(m -> m.getValue().getRoomNumber())
                 .collect(Collectors.toList());
 
         return availableRooms;
     }
 
+    /**
+     * Check in string.
+     *
+     * @return the string
+     */
     public String checkIn() {
         Room checkedInRoom = pollPriorityRoom();
-        Room currentRoom = this.getHotelRooms().get(checkedInRoom.getRoomId());
+        Room currentRoom = this.getHotelRooms().get(checkedInRoom.getRoomNumber());
         currentRoom.setRoomStatus(RoomStatus.Occupied);
         return currentRoom.getRoomNumber();
     }
 
+    /**
+     * Check out string.
+     *
+     * @param roomNumber the room number
+     * @return the string
+     * @throws InvalidRoomNumberException  the invalid room number exception
+     * @throws InvalidRoomServiceException the invalid room service exception
+     */
     public String checkOut(String roomNumber) throws InvalidRoomNumberException, InvalidRoomServiceException {
         Room currentRoom = this.getHotelRooms().get(roomNumber);
         if(currentRoom == null){
@@ -103,6 +141,13 @@ public class DataService {
         return currentRoom.getRoomNumber();
     }
 
+    /**
+     * Clean.
+     *
+     * @param roomNumber the room number
+     * @throws InvalidRoomServiceException the invalid room service exception
+     * @throws InvalidRoomNumberException  the invalid room number exception
+     */
     public void clean(String roomNumber) throws InvalidRoomServiceException, InvalidRoomNumberException {
         Room currentRoom = this.getHotelRooms().get(roomNumber);
         if(currentRoom == null){
@@ -115,6 +160,13 @@ public class DataService {
         addToPriorityRoom(currentRoom);
     }
 
+    /**
+     * Out of service.
+     *
+     * @param roomNumber the room number
+     * @throws InvalidRoomServiceException the invalid room service exception
+     * @throws InvalidRoomNumberException  the invalid room number exception
+     */
     public void outOfService(String roomNumber) throws InvalidRoomServiceException, InvalidRoomNumberException {
         Room currentRoom = this.getHotelRooms().get(roomNumber);
         if(currentRoom == null){
@@ -128,6 +180,13 @@ public class DataService {
         currentRoom.setRoomStatus(RoomStatus.Repair);
     }
 
+    /**
+     * Repair.
+     *
+     * @param roomNumber the room number
+     * @throws InvalidRoomServiceException the invalid room service exception
+     * @throws InvalidRoomNumberException  the invalid room number exception
+     */
     public void repair(String roomNumber) throws InvalidRoomServiceException, InvalidRoomNumberException {
         Room currentRoom = this.getHotelRooms().get(roomNumber);
         if(currentRoom == null){
